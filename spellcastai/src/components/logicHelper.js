@@ -1,48 +1,4 @@
-let isTwoTimes = true;
-
-function wordExistsInBoard(board, word, rows, cols, twoTimes) {
-  for (let i = 0; i < rows; i++) {
-    for (let j = 0; j < cols; j++) {
-      if (board[i][j] === word[0] && searchWord(board, word, 0, i, j, rows, cols, twoTimes)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-  
-function searchWord(board, word, index, row, col, rows, cols, twoTimes) {
-  if (row < 0 || row >= rows || col < 0 || col >= cols) {
-    return false;
-  }
-
-  if (board[row][col] !== word[index]) {
-    return false;
-  }
-
-  if (row === twoTimes[0] && col === twoTimes[1]) {
-    isTwoTimes = true;
-  }
-
-  if (index === word.length - 1) {
-    return true;
-  }
-
-  const char = board[row][col];
-  board[row][col] = '@';
-
-  const wordFound = searchWord(board, word, index + 1, row - 1, col, rows, cols, twoTimes) ||
-        searchWord(board, word, index + 1, row + 1, col, rows, cols, twoTimes) ||
-        searchWord(board, word, index + 1, row, col - 1, rows, cols, twoTimes) ||
-        searchWord(board, word, index + 1, row, col + 1, rows, cols, twoTimes) ||
-        searchWord(board, word, index + 1, row - 1, col + 1, rows, cols, twoTimes) ||
-        searchWord(board, word, index + 1, row - 1, col - 1, rows, cols, twoTimes) ||
-        searchWord(board, word, index + 1, row + 1, col - 1, rows, cols, twoTimes) ||
-        searchWord(board, word, index + 1, row + 1, col + 1, rows, cols, twoTimes);
-
-  board[row][col] = char;
-  return wordFound;
-}
+let path = [];
 
 const letterValues = {
   'A': 1, 'B': 4, 'C': 5, 'D': 3, 'E': 1,
@@ -53,6 +9,54 @@ const letterValues = {
   'Z': 8
 };
 
+function wordExistsInBoard(board, word, rows, cols, twoTimes, multiplierLetter) {
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      if (board[i][j] === word[0] && searchWord(board, word, 0, i, j, rows, cols, twoTimes, multiplierLetter)) {
+        return true;
+      }
+      path = [];
+    }
+  }
+  return false;
+}
+  
+  function searchWord(board, word, index, row, col, rows, cols, twoTimes, multiplierLetter) {
+    if (row < 0 || row >= rows || col < 0 || col >= cols) {
+      return false;
+    }
+  
+    if (board[row][col] !== word[index]) {
+      return false;
+    }
+  
+    if (index === word.length - 1) {
+      path.push(row*5 + col);
+      return true;
+    }
+  
+    const char = board[row][col];
+    board[row][col] = '@';
+    path.push(row*5 + col);
+  
+    const wordFound = searchWord(board, word, index + 1, row - 1, col, rows, cols, twoTimes, multiplierLetter, path) ||
+          searchWord(board, word, index + 1, row + 1, col, rows, cols, twoTimes, multiplierLetter, path) ||
+          searchWord(board, word, index + 1, row, col - 1, rows, cols, twoTimes, multiplierLetter, path) ||
+          searchWord(board, word, index + 1, row, col + 1, rows, cols, twoTimes, multiplierLetter, path) ||
+          searchWord(board, word, index + 1, row - 1, col + 1, rows, cols, twoTimes, multiplierLetter, path) ||
+          searchWord(board, word, index + 1, row - 1, col - 1, rows, cols, twoTimes, multiplierLetter, path) ||
+          searchWord(board, word, index + 1, row + 1, col - 1, rows, cols, twoTimes, multiplierLetter, path) ||
+          searchWord(board, word, index + 1, row + 1, col + 1, rows, cols, twoTimes, multiplierLetter, path);
+  
+    board[row][col] = char;
+
+    if (!wordFound) {
+      path.pop();
+    }
+
+    return wordFound;
+  }
+
 function calculatePoints(word) {
   let points = 0;
   for (let i = 0; i < word.length; i++) {
@@ -61,7 +65,7 @@ function calculatePoints(word) {
   return points;
 }
 
-function findMatchingWords(board, dictionary, twoTimes) {
+function findMatchingWords(board, dictionary, twoTimes, multiplierLetter) {
   const rows = board.length;
   const cols = board[0].length;
   let highestPoints = 0;
@@ -70,23 +74,28 @@ function findMatchingWords(board, dictionary, twoTimes) {
   for (let i = 0; i < dictionary.length; i++) {
     const word = dictionary[i];
     let points = calculatePoints(word);
-    isTwoTimes = false;
+    path = [];
 
-    const isWordInBoard = wordExistsInBoard(board, word, rows, cols, twoTimes);
+    const isWordInBoard = wordExistsInBoard(board, word, rows, cols);
     if (isWordInBoard) {
-      if(isTwoTimes) {
+      if (path.includes(twoTimes)) {
         points *= 2;
-        isTwoTimes = false;
       }
-      if(points > highestPoints) {
-        highestPoints = points;
-        matchingWords = [word];
+      if (path.includes(multiplierLetter[0])) {
+        const row = Math.floor(multiplierLetter[0] / 5);
+        const col = multiplierLetter[0] % 5;
+        const getLetter = board[row][col].toUpperCase();
+        points += letterValues[getLetter]*multiplierLetter[1];
       }
       if (word.length >= 6) {
         points += 10;
       }
-    } else if (points === highestPoints && isWordInBoard) {
-      matchingWords.push(word);
+      if(points > highestPoints) {
+        highestPoints = points;
+        matchingWords = [{ word, points }];
+      } else if (points === highestPoints) {
+        matchingWords.push({ word, points });
+      }
     }
   }
 

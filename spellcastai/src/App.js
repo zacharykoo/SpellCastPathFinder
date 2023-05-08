@@ -3,7 +3,6 @@ import { findMatchingWords } from './components/logicHelper';
 import Result from './components/Result';
 
 const dictionary = require('an-array-of-english-words');
-// const dictionary = ['zoo', 'que', 'boo']
 
 function App() {
   const [grid, setGrid] = useState([
@@ -14,7 +13,9 @@ function App() {
     ['', '', '', '', ''],
   ]);
 
-  const [twoTimes, setTwoTimes] = useState([-1, -1]);
+  const [twoTimes, setTwoTimes] = useState([-1]);
+  const [multiplierLetter, setMultiplierLetter] = useState([-1, 1]);
+  const [submitClicked, setSubmitClicked] = useState(false);
 
   const handleChange = (event, row, col) => {
     const { value } = event.target;
@@ -27,7 +28,14 @@ function App() {
 
   const lowercaseGrid = grid.map(row => row.map(char => char.toLowerCase()));
 
-  const ans = findMatchingWords(lowercaseGrid, dictionary, twoTimes);
+  const handleClick = () => {
+    setSubmitClicked(true);
+  };
+
+  let ans = [];
+  if (submitClicked) {
+    ans = findMatchingWords(lowercaseGrid, dictionary, twoTimes, multiplierLetter);
+  }
 
   return (
     <div>
@@ -35,27 +43,22 @@ function App() {
       <div>
         <h2>Enter the row and column of the 2x letter multiplier:</h2>
         <input
-        type="number"
-        value={twoTimes[0]}
-        onChange={event => setTwoTimes([parseInt(event.target.value), twoTimes[1]])}
-        />
-        <input
           type="number"
-          value={twoTimes[1]}
-          onChange={event => setTwoTimes([twoTimes[0], parseInt(event.target.value)])}
+          value={twoTimes}
+          onChange={event => setTwoTimes(parseInt(event.target.value))}
         />
       </div>
       <div>
-        <h2>Enter the row and column of the double letter:</h2>
+        <h2>Enter the row and column of the letter multiplier with 2x or 3x:</h2>
         <input
-        type="number"
-        value={twoTimes[0]}
-        onChange={event => setTwoTimes([parseInt(event.target.value), twoTimes[1]])}
+          type="number"
+          value={multiplierLetter[0]}
+          onChange={event => setMultiplierLetter([parseInt(event.target.value), multiplierLetter[1]])}
         />
         <input
           type="number"
-          value={twoTimes[1]}
-          onChange={event => setTwoTimes([twoTimes[0], parseInt(event.target.value)])}
+          value={multiplierLetter[1]}
+          onChange={event => setMultiplierLetter([multiplierLetter[0], parseInt(event.target.value)])}
         />
       </div>
       <div>
@@ -74,7 +77,8 @@ function App() {
           </div>
         ))}
       </div>
-      <Result ans={ans} />
+      <button onClick={handleClick}>Submit</button>
+      {submitClicked && <Result ans={ans} />}
     </div>
   );
 }
